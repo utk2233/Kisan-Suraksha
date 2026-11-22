@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="hi" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kisan Suraksha — किसान सुरक्षा | Crop Insurance Claim Assistant</title>
+<meta name="description" content="Multilingual crop insurance claim assistant: live weather, 80+ crops, field area mapping, photo evidence and printable damage report." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 28V12M16 12c0-5 4-9 9-9 0 5-4 9-9 9zm0 0c0-5-4-9-9-9 0 5 4 9 9 9z' fill='none' stroke='%23237a4b' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&family=Noto+Sans+Gurmukhi:wght@400;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Gujarati:wght@400;600;700&family=Noto+Sans+Tamil:wght@400;600;700&family=Noto+Sans+Telugu:wght@400;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="assets/css/styles.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <svg width="34" height="34" viewBox="0 0 32 32" fill="none" aria-label="Kisan Suraksha logo">
+        <path d="M16 29V11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+        <path d="M16 11c0-5.5 4.5-10 10-10 0 5.5-4.5 10-10 10z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M16 15C16 9.5 11.5 5 6 5c0 5.5 4.5 10 10 10z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+        <path d="M4 29h24" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+      </svg>
+      <div>
+        <span class="brand-name" data-i18n="app.name">किसान सुरक्षा</span>
+        <span class="brand-sub" data-i18n="app.tagline">फसल बीमा क्लेम सहायक</span>
+      </div>
+    </div>
+
+    <nav id="mainNav"></nav>
+
+    <div class="side-card">
+      <strong style="font-size:var(--text-sm)" data-i18n="com.help">मदद चाहिए?</strong>
+      <small style="color:var(--text-muted)" data-i18n="com.helpText"></small>
+      <button class="btn btn-primary btn-sm" data-go="assistant" data-i18n="com.chatNow"></button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main>
+
+    <!-- mobile bar -->
+    <div class="mobile-bar">
+      <div class="brand">
+        <svg width="26" height="26" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+          <path d="M16 29V11" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M16 11c0-5.5 4.5-10 10-10 0 5.5-4.5 10-10 10z" stroke="currentColor" stroke-width="2.2"/>
+          <path d="M16 15C16 9.5 11.5 5 6 5c0 5.5 4.5 10 10 10z" stroke="currentColor" stroke-width="2.2"/>
+        </svg>
+        <span class="brand-name" data-i18n="app.name"></span>
+      </div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <select class="lang-select" id="langSelectMobile" aria-label="Language"></select>
+        <button class="icon-btn" id="menuBtn" aria-label="Menu">☰</button>
+      </div>
+    </div>
+
+    <div class="scrim" id="scrim"></div>
+    <div class="mobile-nav" id="mobileNav">
+      <strong data-i18n="com.menu"></strong>
+      <nav id="mobileNavList"></nav>
+    </div>
+
+    <!-- topbar -->
+    <div class="topbar no-print">
+      <div>
+        <h1 id="greetLine">नमस्ते 🌾</h1>
+        <p style="color:var(--text-muted);font-size:var(--text-sm)" data-i18n="dash.sub"></p>
+      </div>
+      <div class="topbar-right">
+        <span class="chip" id="wxChip">⛅ <strong>--°C</strong></span>
+        <span class="chip" id="userChip">👨🏽‍🌾 <strong data-i18n="com.notSet"></strong></span>
+        <select class="lang-select" id="langSelect" aria-label="Language"></select>
+        <button class="icon-btn" id="themeBtn" aria-label="Light / dark">🌙</button>
+      </div>
+    </div>
+
+    <!-- ============ DASHBOARD ============ -->
+    <section class="view active" id="view-dashboard">
+      <div class="hero">
+        <div>
+          <div class="eyebrow" data-i18n="dash.heroLabel"></div>
+          <h2 data-i18n="dash.heroTitle"></h2>
+          <p data-i18n="dash.heroText"></p>
+          <div class="hero-actions">
+            <button class="btn btn-light" data-go="claim">🛡 <span data-i18n="nav.claim"></span></button>
+            <button class="btn btn-outline-light" data-go="claims"><span data-i18n="nav.claims"></span> →</button>
+          </div>
+        </div>
+        <div class="hero-panel">
+          <h3 data-i18n="dash.overview"></h3>
+          <div class="hero-row"><span data-i18n="dash.insuredArea"></span><b id="ovArea">0</b></div>
+          <div class="hero-row"><span data-i18n="dash.totalClaims"></span><b id="ovClaims">0</b></div>
+          <div class="hero-row"><span data-i18n="dash.activeClaims"></span><b id="ovActive">0</b></div>
+          <div class="hero-row"><span data-i18n="dash.estTotal"></span><b id="ovAmount">₹0</b></div>
+        </div>
+      </div>
+
+      <h2 style="margin:var(--space-8) 0 var(--space-4)" data-i18n="dash.quick"></h2>
+      <div class="grid grid-4">
+        <button class="tile" data-go="claim"><span class="ico">🛡</span><b data-i18n="dash.q1"></b><small data-i18n="claim.s1"></small></button>
+        <button class="tile" data-go="weather"><span class="ico">⛈</span><b data-i18n="dash.q2"></b><small data-i18n="wx.forecast"></small></button>
+        <button class="tile" data-go="profile"><span class="ico">👨🏽‍🌾</span><b data-i18n="dash.q3"></b><small data-i18n="prof.phone"></small></button>
+        <button class="tile" data-go="report"><span class="ico">🖨</span><b data-i18n="dash.q4"></b><small data-i18n="rep.photos"></small></button>
+      </div>
+
+      <div class="card" style="margin-top:var(--space-8)">
+        <div class="card-title"><h2 data-i18n="wx.riskTitle"></h2><button class="btn btn-ghost btn-sm" data-go="weather"><span data-i18n="nav.weather"></span> →</button></div>
+        <div id="dashRisks"><div class="alert alert-info" data-i18n="wx.loading"></div></div>
+      </div>
+    </section>
+
+    <!-- ============ PROFILE ============ -->
+    <section class="view" id="view-profile">
+      <div class="page-head">
+        <div class="eyebrow" data-i18n="nav.profile"></div>
+        <h1 data-i18n="prof.title"></h1>
+        <p data-i18n="prof.sub"></p>
+      </div>
+
+      <div class="card">
+        <form id="profileForm" novalidate>
+          <div class="grid grid-2">
+            <div class="field" id="f-name">
+              <label for="pName"><span data-i18n="prof.name"></span> *</label>
+              <input id="pName" name="name" autocomplete="name" placeholder="Ramesh Kumar" />
+              <span class="err" data-i18n="prof.nameErr"></span>
+            </div>
+            <div class="field" id="f-phone">
+              <label for="pPhone"><span data-i18n="prof.phone"></span> *</label>
+              <input id="pPhone" name="phone" inputmode="numeric" maxlength="10" placeholder="9876543210" />
+              <span class="err" data-i18n="prof.phoneErr"></span>
+            </div>
+            <div class="field">
+              <label for="pVillage" data-i18n="prof.village"></label>
+              <input id="pVillage" name="village" placeholder="Baldeo" />
+            </div>
+            <div class="field">
+              <label for="pDistrict" data-i18n="prof.district"></label>
+              <input id="pDistrict" name="district" placeholder="Mathura" />
+            </div>
+            <div class="field">
+              <label for="pState" data-i18n="prof.state"></label>
+              <input id="pState" name="state" placeholder="Uttar Pradesh" />
+            </div>
+            <div class="field">
+              <label for="pLand"><span data-i18n="prof.land"></span> <small data-i18n="com.optional"></small></label>
+              <div class="input-row">
+                <input id="pLand" name="land" inputmode="decimal" placeholder="2.5" />
+                <select id="pLandUnit" name="landUnit"></select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="pPolicy"><span data-i18n="prof.policy"></span> <small data-i18n="com.optional"></small></label>
+              <input id="pPolicy" name="policy" placeholder="PMFBY/2026/UP/00123" />
+            </div>
+            <div class="field">
+              <label for="pInsurer"><span data-i18n="prof.insurer"></span> <small data-i18n="com.optional"></small></label>
+              <input id="pInsurer" name="insurer" placeholder="AIC of India" />
+            </div>
+            <div class="field">
+              <label for="pBank"><span data-i18n="prof.bank"></span> <small data-i18n="com.optional"></small></label>
+              <input id="pBank" name="bank" placeholder="SBI · XXXX3421" />
+            </div>
+            <div class="field">
+              <label for="pLangPref" data-i18n="com.language"></label>
+              <select id="pLangPref" name="langPref"></select>
+            </div>
+          </div>
+          <div class="actions-row">
+            <button type="submit" class="btn btn-primary">💾 <span data-i18n="com.save"></span></button>
+            <span class="chip" id="farmerIdChip" hidden></span>
+          </div>
+        </form>
+      </div>
+      <div class="card" style="margin-top:var(--space-5)">
+        <div class="card-title">
+          <h2>Google Account</h2>
+          <span class="chip" id="googleStatus">Not connected</span>
+        </div>
+        <p class="hint">Connect your Google account with your Kisan Suraksha Firebase account.</p>
+        <div class="actions-row">
+          <button type="button" class="btn btn-primary" id="connectGoogleBtn">🔵 Connect Google Account</button>
+          <span class="hint" id="googleAccountText"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CLAIM ============ -->
+    <section class="view" id="view-claim">
+      <div class="page-head">
+        <div class="eyebrow" data-i18n="nav.claim"></div>
+        <h1 data-i18n="claim.title"></h1>
+        <p data-i18n="claim.sub"></p>
+      </div>
+
+      <div class="stepper" id="stepper"></div>
+
+      <!-- STEP 1 -->
+      <div class="step-panel active" id="step-1">
+        <div class="card">
+          <div class="card-title"><h2 data-i18n="claim.s1"></h2></div>
+          <div class="grid grid-2">
+            <div class="field" id="f-crop">
+              <label for="cCropSearch"><span data-i18n="claim.crop"></span> *</label>
+              <input id="cCropSearch" list="cropList" autocomplete="off" />
+              <datalist id="cropList"></datalist>
+              <span class="hint" data-i18n="claim.cropSearch"></span>
+              <span class="err" data-i18n="com.required"></span>
+            </div>
+            <div class="field">
+              <label for="cSeason" data-i18n="claim.season"></label>
+              <select id="cSeason"></select>
+            </div>
+            <div class="field">
+              <label for="cSowDate" data-i18n="claim.sowDate"></label>
+              <input type="date" id="cSowDate" />
+            </div>
+            <div class="field" id="f-dmgDate">
+              <label for="cDmgDate"><span data-i18n="claim.damageDate"></span> *</label>
+              <input type="date" id="cDmgDate" />
+              <span class="err" data-i18n="com.required"></span>
+            </div>
+            <div class="field" id="f-area">
+              <label for="cArea"><span data-i18n="claim.area"></span> *</label>
+              <div class="input-row">
+                <input id="cArea" inputmode="decimal" placeholder="1.5" />
+                <select id="cUnit"></select>
+              </div>
+              <span class="hint" id="areaConv">—</span>
+              <span class="err" data-i18n="com.required"></span>
+            </div>
+            <div class="field">
+              <label for="cDmgPct"><span data-i18n="claim.damagePct"></span>: <b id="dmgPctOut">40%</b></label>
+              <input type="range" id="cDmgPct" min="5" max="100" step="5" value="40" />
+              <span class="hint" id="estOut">—</span>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:var(--space-5)" id="f-cause">
+            <label><span data-i18n="claim.cause"></span> *</label>
+            <div class="checks" id="causeList"></div>
+            <span class="err" data-i18n="claim.causeErr"></span>
+          </div>
+
+          <div class="field" style="margin-top:var(--space-5)">
+            <label for="cNotes" data-i18n="claim.notes"></label>
+            <textarea id="cNotes" rows="3"></textarea>
+          </div>
+
+          <div class="actions-row">
+            <button class="btn btn-primary" id="submitClaimBtn">✅ <span data-i18n="claim.submit"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 2 : field area map -->
+      <div class="step-panel" id="step-2">
+        <div class="alert alert-ok" style="margin-bottom:var(--space-4)">
+          <span>🎉</span>
+          <div>
+            <b data-i18n="claim.submittedTitle"></b> — <span data-i18n="claim.id"></span>: <b id="liveClaimId"></b><br />
+            <small data-i18n="claim.submittedMsg"></small>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">
+            <h2 data-i18n="claim.s2"></h2>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-sm" id="gpsBtn">📍 <span data-i18n="claim.gps"></span></button>
+              <button class="btn btn-ghost btn-sm" id="clearPtsBtn">🧹 <span data-i18n="claim.clearPts"></span></button>
+            </div>
+          </div>
+          <p style="color:var(--text-muted);font-size:var(--text-sm);margin-bottom:var(--space-4)" data-i18n="claim.locSub"></p>
+          <div id="fieldMap"></div>
+          <div class="grid grid-3" style="margin-top:var(--space-4)">
+            <div class="stat"><span class="label" data-i18n="claim.plotArea"></span><span class="value" id="mapArea">—</span></div>
+            <div class="stat"><span class="label">GPS</span><span class="value" id="gpsOut" style="font-size:var(--text-sm)">—</span></div>
+            <div class="stat"><span class="label" data-i18n="claim.area"></span><span class="value" id="declaredArea">—</span></div>
+          </div>
+          <div class="actions-row">
+            <button class="btn btn-ghost" data-step="1">← <span data-i18n="com.back"></span></button>
+            <button class="btn btn-primary" id="saveLocBtn"><span data-i18n="com.save"></span> & <span data-i18n="com.next"></span> →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 3 : evidence -->
+      <div class="step-panel" id="step-3">
+        <div class="card">
+          <div class="card-title"><h2 data-i18n="claim.s3"></h2><span class="chip"><strong id="photoCount">0</strong> <span data-i18n="claim.photoCount"></span></span></div>
+          <p style="color:var(--text-muted);font-size:var(--text-sm);margin-bottom:var(--space-4)" data-i18n="claim.evSub"></p>
+          <label class="drop" id="drop" for="photoInput">
+            <span style="font-size:2rem">📸</span>
+            <b data-i18n="claim.upload"></b>
+            <small data-i18n="claim.minPhotos"></small>
+            <input type="file" id="photoInput" accept="image/*" multiple capture="environment" style="max-width:280px" />
+          </label>
+          <div class="photos" id="photoGrid"></div>
+          <div class="actions-row">
+            <button class="btn btn-ghost" data-step="2">← <span data-i18n="com.back"></span></button>
+            <button class="btn btn-primary" id="genReportBtn">📄 <span data-i18n="claim.genReport"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 4 : done -->
+      <div class="step-panel" id="step-4">
+        <div class="card">
+          <div class="alert alert-ok"><span>🤖</span><div><b data-i18n="claim.submittedTitle"></b><br /><small id="aiSpokenLine"></small></div></div>
+          <div class="actions-row">
+            <button class="btn btn-primary" data-go="report">📄 <span data-i18n="nav.report"></span></button>
+            <button class="btn btn-gold" id="printFromStep">🖨 <span data-i18n="com.print"></span></button>
+            <button class="btn btn-ghost" data-go="claims"><span data-i18n="nav.claims"></span></button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ CLAIMS LIST ============ -->
+    <section class="view" id="view-claims">
+      <div class="page-head">
+        <div class="eyebrow" data-i18n="nav.claims"></div>
+        <h1 data-i18n="nav.claims"></h1>
+      </div>
+      <div class="card" id="claimsCard"></div>
+    </section>
+
+    <!-- ============ WEATHER ============ -->
+    <section class="view" id="view-weather">
+      <div class="page-head">
+        <div class="eyebrow" data-i18n="nav.weather"></div>
+        <h1 data-i18n="wx.title"></h1>
+        <p data-i18n="wx.sub"></p>
+      </div>
+
+      <div class="card">
+        <div class="grid grid-2">
+          <div class="field">
+            <label for="placeInput" data-i18n="wx.searchPlace"></label>
+            <div class="input-row">
+              <input id="placeInput" placeholder="Mathura" />
+              <button class="btn btn-primary btn-sm" id="placeBtn">🔍</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>GPS</label>
+            <button class="btn btn-ghost" id="wxGpsBtn">📍 <span data-i18n="claim.gps"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="wxCard">
+        <div class="alert alert-info" data-i18n="wx.loading"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><h2 data-i18n="wx.riskTitle"></h2></div>
+        <div id="wxRisks"></div>
+      </div>
+    </section>
+
+    <!-- ============ REPORT ============ -->
+    <section class="view" id="view-report">
+      <div class="page-head no-print">
+        <div class="eyebrow" data-i18n="nav.report"></div>
+        <h1 data-i18n="rep.title"></h1>
+      </div>
+      <div class="actions-row no-print" style="margin:0 0 var(--space-4)">
+        <button class="btn btn-gold" id="printBtn">🖨 <span data-i18n="com.print"></span></button>
+        <button class="btn btn-ghost" id="speakBtn">🔊 <span data-i18n="ai.speak"></span></button>
+      </div>
+      <div id="reportHost"></div>
+    </section>
+
+    <!-- ============ ASSISTANT ============ -->
+    <section class="view" id="view-assistant">
+      <div class="page-head">
+        <div class="eyebrow" data-i18n="nav.assistant"></div>
+        <h1 data-i18n="ai.title"></h1>
+        <p data-i18n="ai.sub"></p>
+      </div>
+      <div class="card">
+        <div class="chat" id="chat"></div>
+        <div class="suggest" id="suggest"></div>
+        <form class="chat-input" id="chatForm">
+          <input id="chatText" autocomplete="off" />
+          <button class="btn btn-primary" type="submit" data-i18n="ai.send"></button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toasts" id="toasts"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="assets/js/i18n.js"></script>
+<script src="assets/js/crops.js"></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage-compat.js"></scr
